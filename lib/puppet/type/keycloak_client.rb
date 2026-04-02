@@ -305,6 +305,48 @@ Manage Keycloak clients
     requires
   end
 
+  newproperty(:custom_properties) do
+    desc 'custom properties to pass as client configurations'
+    defaultto {}
+
+    validate do |value|
+      # rubocop:disable Style/SignalException
+      fail 'custom_properties should be a Hash' unless value.is_a? ::Hash
+
+      #value.each_pair do |_k, v|
+      #  fail 'custom_properties does not allow Hash values' if v.is_a? ::Hash
+      #end
+      # rubocop:enable Style/SignalException
+    end
+
+    def insync?(is)
+      should = @should
+      should = should[0] if should.is_a?(Array)
+      should.each_pair do |k, v|
+        return false unless is.key?(k)
+
+        case v
+        when String, TrueClass, FalseClass
+          return false if is[k].to_s != v.to_s
+        when Array
+          return false if is[k].sort != v.sort
+        end
+      end
+      true
+    end
+
+    def change_to_s(currentvalue, newvalue)
+      currentvalue = currentvalue.to_s if currentvalue != :absent
+      newvalue = newvalue.to_s
+      super(currentvalue, newvalue)
+    end
+
+    def is_to_s(currentvalue) # rubocop:disable Style/PredicateName
+      currentvalue.to_s
+    end
+    alias_method :should_to_s, :is_to_s
+  end
+
   validate do
     if self[:authorization_services_enabled] == :true && self[:service_accounts_enabled] == :false
       raise "Keycloak_client[#{self[:name]}] must have service_accounts_enabled => true if authorization_services_enabled => true"

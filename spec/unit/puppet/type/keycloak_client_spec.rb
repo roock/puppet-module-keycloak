@@ -184,6 +184,28 @@ describe Puppet::Type.type(:keycloak_client) do
     end
   end
 
+  describe 'custom_properties' do
+    it 'allow custom properties' do
+      config[:custom_properties] = { 'foo' => 'bar' }
+      expect(resource[:custom_properties]).to eq('foo' => 'bar')
+    end
+
+    it 'is in sync with default' do
+      config[:custom_properties] = {}
+      expect(resource.property(:custom_properties).insync?('foo' => 'bar')).to eq(true)
+    end
+
+    it 'is in sync with defined properties' do
+      config[:custom_properties] = { 'foo' => 'bar' }
+      expect(resource.property(:custom_properties).insync?('foo' => 'bar', 'bar' => 'baz')).to eq(true)
+    end
+
+    # it 'rejects nested hash values' do
+    #   config[:custom_properties] = { 'foo' => { 'nested' => 'value' } }
+    #   expect { resource }.to raise_error(%r{custom_properties does not allow Hash values})
+    # end
+  end
+
   it 'autorequires keycloak_conn_validator' do
     keycloak_conn_validator = Puppet::Type.type(:keycloak_conn_validator).new(name: 'keycloak')
     catalog = Puppet::Resource::Catalog.new

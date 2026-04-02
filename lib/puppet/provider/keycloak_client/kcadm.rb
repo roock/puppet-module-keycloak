@@ -145,6 +145,10 @@ Puppet::Type.type(:keycloak_client).provide(:kcadm, parent: Puppet::Provider::Ke
         # The absence of a value should be 'absent'
         client[:login_theme] = 'absent' if client[:login_theme].nil?
         client[:roles] = get_client_roles(realm, client[:id])
+        client[:custom_properties] = {}
+        d.each_pair do |k, v|
+          client[:custom_properties][k] = v unless type_properties.include?(k.to_sym)
+        end
         clients << new(client)
       end
     end
@@ -213,6 +217,9 @@ Puppet::Type.type(:keycloak_client).provide(:kcadm, parent: Puppet::Provider::Ke
     data[:id] = resource[:id]
     data[:clientId] = resource[:client_id]
     data[:secret] = resource[:secret] if resource[:secret]
+    (resource[:custom_properties] || {}).each_pair do |k, v|
+      data[k] = v unless type_properties.include?(k.to_sym)
+    end
     type_properties.each do |property|
       next if [:default_client_scopes, :optional_client_scopes, :roles].include?(property)
       next unless resource[property.to_sym]
@@ -360,6 +367,9 @@ Puppet::Type.type(:keycloak_client).provide(:kcadm, parent: Puppet::Provider::Ke
 
       data = {}
       data[:clientId] = resource[:client_id]
+      (@property_flush[:custom_properties] || resource[:custom_properties] || {}).each_pair do |k, v|
+        data[k] = v unless type_properties.include?(k.to_sym)
+      end
       if resource[:authorization_services_enabled] == :true
         data[:authorizationServicesEnabled] = true
         data[:serviceAccountsEnabled] = true
